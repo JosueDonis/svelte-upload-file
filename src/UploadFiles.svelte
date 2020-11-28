@@ -20,9 +20,10 @@
     file.upload = true;
     file.progress = 0;
     files = files;
+    let { signed_url, file: item, _ufid } = await retrieveNewURL(file);
     axios.request( {
       method: 'PUT', 
-      url: //add url api upload file, 
+      url: signed_url, 
       data: item, 
       cancelToken: new CancelToken(c => {
          file.cancel = c;
@@ -35,9 +36,10 @@
 
     }).then (data => {
       file.progress = 100;
+      file.ufid = _ufid;
       file.upload = false;
       files = files;
-      dispatch("upload", files)
+      dispatch("upload", Object.keys(files).map(key => {return {name: files[key].name, ufid: files[key].ufid}}))
     })
   }
 
@@ -45,7 +47,6 @@
     let filter = Object.keys(files).filter(key => key != i).map(key => files[key])
     files = filter
     files = files
-    console.log(files)
   }
 
   const cancelUpload = (file) => {
@@ -57,21 +58,25 @@
   }
 
   const download = async(file) => {
-    let res = await fetch(`add url api download file`, {
+    let res = await fetch(`https://tools.ubisuite.com/v1/file/download`, {
       method: 'POST',
-      body:JSON.stringify(file)
+      body:JSON.stringify( {
+        "key":"intcomex",
+        "file":file.ufid
+      })
     })
-    let json = await res.json()
-    let url = new URL(json.signed_url)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', file.name)
-    document.body.appendChild(link)
-    link.click()
+    let json = await res.json();
+    let url = new URL(json.signed_url);
+    const link = document.createElement('a'); 
+    link.href = url; 
+    link.setAttribute('download', file.name); 
+    document.body.appendChild(link); 
+    link.click(); 
   }
 
   const addFiles = e => {
     let temp = e.target.files
+    console.log(temp);
     if(!files.length) {
       files = temp
     }else {
@@ -130,17 +135,7 @@
     flex-direction: row;
   }
 
-  .progress {
-    width: 250px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .progress-bar::part(indicator) {
-    background-color:  #000A80;
-  }
+  
 
   .input-file-container {
     position: relative;
@@ -182,6 +177,49 @@
     flex-direction: column;
     align-items: center;
   }
+
+  .progress {
+    width: 300px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  progress {
+    background-color: #d8d8d8;
+    border-radius: 8px;
+    position: relative;
+    height: 12px;
+    width: 150px;
+  }
+
+  progress::-webkit-progress-bar {
+    background-color: #d8d8d8;
+    border-radius: 8px;
+    position: relative;
+    height: 12px;
+    width: auto;
+  }
+  progress::-webkit-progress-value {
+    background: #000A80;
+    border-radius: 8px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 0;
+    transition: 1s ease 0.3s;
+  }
+  progress::-moz-progress-bar {
+    background-color: #d8d8d8;
+    border-radius: 8px;
+    position: relative;
+    height: 12px;
+    width: 150px;
+  }
+
 </style>
 
 <div class="upload-files">
@@ -206,7 +244,7 @@
             </div>
           {:else}
             <div class="progress">
-              <progress  max="100" value="{file.progress}" style="height: 14px; width: 100px;"></progress>
+              <progress  max="100" value="{file.progress}"></progress>
               <svg style="cursor: pointer; margin:4px 4px;" on:click="{e=>{cancelUpload(file, i)}}" width="24px" height="24px"viewBox="0 0 512 512"><title>Cancelar</title><path d="M448 256c0-106-86-192-192-192S64 150 64 256s86 192 192 192 192-86 192-192z" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M320 320L192 192M192 320l128-128"/></svg>
             </div>
           {/if}
